@@ -269,6 +269,10 @@ def make_instruction(task_text: str, include_text: bool) -> str:
         return f"Meme Text: '{task_text}'\n\n{base_task}"
     return base_task
 
+
+def label_name(label: int) -> str:
+    return "misogynous" if label == 1 else "clean"
+
 # ==========================================
 # Main distributed evaluation
 # ==========================================
@@ -278,6 +282,10 @@ def main():
                         help="Whether to inject OCR text transcription into the prompt.")
     parser.add_argument("--output_csv", default=None,
                         help="Optional output CSV path. If omitted, a default path is used.")
+    parser.add_argument("--max_images", type=int, default=None,
+                        help="Optional number of MAMI test images to evaluate.")
+    parser.add_argument("--max_emojis", type=int, default=None,
+                        help="Optional number of emojis to evaluate.")
     args = parser.parse_args()
 
     include_text = args.mode == "with_text"
@@ -314,10 +322,14 @@ def main():
         names=["file_name", "misogynous", "shaming", "stereotype", "objectification", "violence"],
     )
     mami_df = pd.merge(texts_df, labels_df, on="file_name", how="inner")
+    if args.max_images is not None:
+        mami_df = mami_df.head(args.max_images)
 
     available_emojis = load_available_emojis()
     if len(available_emojis) == 0:
         raise FileNotFoundError(f"No emoji PNG files found in {EMOJI_BASE_DIR}")
+    if args.max_emojis is not None:
+        available_emojis = dict(list(available_emojis.items())[:args.max_emojis])
 
     all_tasks = build_tasks(mami_df, available_emojis)
     my_tasks = all_tasks[local_rank::world_size]
@@ -426,6 +438,13 @@ def main():
                 task["placement_seed"],
             ])
 
+        tqdm.tqdm.write(
+            f"[rank {local_rank}] file={task['file_name']} "
+            f"true={label_name(task['true_label'])} "
+            f"emoji={task['emoji_name']} pattern={task['pattern_name']} "
+            f"alpha={task['alpha']} pred={label_name(pred_label)} "
+            f"raw={output_text!r}"
+        )
         pbar.update(1)
 
     dist.barrier()
