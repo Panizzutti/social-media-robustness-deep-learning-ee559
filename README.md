@@ -20,6 +20,20 @@ The MAMI dataset is not included in this repository. MAMI is the SemEval-2022 Mu
 
 The scripts expect the binary MAMI label `misogynous`, where `1` means misogynous and `0` means non-misogynous/clean. The original split is 10,000 training memes and 1,000 test memes.
 
+## Running
+
+Single-GPU distributed evaluations can be launched with `torchrun --standalone --nproc_per_node=1`. For example:
+
+```bash
+torchrun --standalone --nproc_per_node=1 scripts/mami_eval/eval_baseline_unseen_random_geometries.py --mode no_text
+torchrun --standalone --nproc_per_node=1 scripts/mami_finetuning/eval_finetuned_unseen_random_geometries.py --mode with_text
+```
+
+For the fine-tuned unseen-random-geometry file, `eval_finetuned_unseen_random_geometries.py`, demo runs can limit the number of images and emojis. We used this option for the code demonstration.
+
+```bash
+torchrun --standalone --nproc_per_node=1 eval_finetuned_unseen_random_geometries.py --mode with_text --max_images 50 --max_emojis 5
+```
 
 ## Limitations
 
