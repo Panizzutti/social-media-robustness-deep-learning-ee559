@@ -1,0 +1,7 @@
+models/
+datasets/
+augmented_datasets/
+model_cache/
+emoticons/
+
+.DS_Store
