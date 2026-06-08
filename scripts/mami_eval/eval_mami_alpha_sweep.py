@@ -52,7 +52,7 @@ def main():
     # Paths
     base_img_dir = "/scratch/datasets/MAMI/test/"
     labels_path = "/scratch/datasets/MAMI/test_labels.txt"
-    # Make sure this points to your exact laughing emoji!
+    # Fixed emoji used for the opacity sweep.
     emoji_path = "/scratch/utils/emoticons/emoticons_png/512/emoji_u1f602.png" 
     out_dir = "/scratch/results/alpha_sweep"
     os.makedirs(out_dir, exist_ok=True)

@@ -22,7 +22,6 @@ TOP_20_EMOJIS = {
 
 BASE_MODEL_ID = "QCRI/MemeLens-VLM"
 ADAPTER_PATH = "/scratch/models/MemeLens_Robust_LoRA/final" 
-# [CHANGE 1]: Distinct Output File
 OUT_CSV = "/scratch/results/mami_finetuned_massive_no_text_results.csv"
 
 # ==========================================
@@ -161,7 +160,7 @@ def main():
                 emoji_img = Image.open(task["emoji_path"]).convert("RGBA")
                 obfuscated_pil = task["pattern_func"](Image.open(img_path).convert("RGBA"), emoji_img, task["alpha"])
             
-            # [CHANGE 2]: Pure Visual Prompt (No OCR Text Injected)
+            # Pure visual prompt without OCR text.
             dynamic_instruction = "Task: Identify if this meme contains misogyny.\nAllowed Labels: 'misogynous' or 'clean'.\nAnswer:"
             
             messages = [
@@ -210,7 +209,7 @@ def main():
             
         final_df = pd.concat(all_dfs, ignore_index=True)
         final_df.to_csv(OUT_CSV, index=False)
-        print(f"✅ Master evaluation complete! Results saved to: {OUT_CSV}")
+        print(f"Evaluation complete. Results saved to: {OUT_CSV}")
 
     dist.destroy_process_group()
 

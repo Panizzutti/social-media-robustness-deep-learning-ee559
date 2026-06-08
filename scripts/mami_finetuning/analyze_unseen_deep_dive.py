@@ -35,7 +35,7 @@ def analyze_unseen_sweep(file_path, sweep_name):
     try:
         df = pd.read_csv(file_path)
     except FileNotFoundError:
-        print(f"[!] File not found: {file_path}. Have you generated it yet?")
+        print(f"[!] File not found: {file_path}")
         return
 
     # Extract Clean Baseline (alpha == 0.0)

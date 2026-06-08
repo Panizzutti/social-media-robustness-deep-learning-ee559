@@ -8,7 +8,7 @@ from transformers import AutoProcessor, Qwen3VLForConditionalGeneration, Trainin
 from peft import LoraConfig, get_peft_model
 
 # ==========================================
-# PRODUCTION CONFIGURATION
+# TRAINING CONFIGURATION
 # ==========================================
 MODEL_ID = "QCRI/MemeLens-VLM" 
 DATA_PATH = "/scratch/datasets/MAMI/train/mami_train_augmented.jsonl" 
@@ -47,7 +47,6 @@ class QwenCollator:
 # DATA LOADING & FORMATTING
 # ==========================================
 def load_and_format_dataset(jsonl_path, processor):
-    # Only let Rank 0 print the loading message
     if int(os.environ.get("LOCAL_RANK", "0")) == 0:
         print("Loading and formatting full dataset...")
         
@@ -85,12 +84,12 @@ def load_and_format_dataset(jsonl_path, processor):
 # MAIN TRAINING LOOP (DDP ENABLED)
 # ==========================================
 def main():
-    # 1. Initialize Multi-GPU Communication
+    # 1. Initialize multi-GPU communication.
     dist.init_process_group(backend="nccl")
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
     torch.cuda.set_device(local_rank) 
 
-    # 2. THE TRAFFIC COP: Freeze GPUs 1-5 while GPU 0 downloads the model safely
+    # 2. Synchronize ranks while rank 0 initializes shared resources.
     if local_rank != 0:
         dist.barrier()
 
@@ -99,23 +98,21 @@ def main():
     train_dataset = load_and_format_dataset(DATA_PATH, processor)
     
     if local_rank == 0:
-        print(f"Loaded {len(train_dataset)} examples for production run.")
+        print(f"Loaded {len(train_dataset)} training examples.")
 
     print(f"Loading Base Model on GPU {local_rank} in pure FP16...")
     model = Qwen3VLForConditionalGeneration.from_pretrained(
         MODEL_ID,
-        device_map={"": local_rank}, # Lock to specific GPU
+        device_map={"": local_rank},
         attn_implementation="sdpa",
         torch_dtype=torch.float16
     )
     
-    # 4. Wake up GPUs 1-5 now that GPU 0 is finished downloading
+    # 4. Release the remaining ranks after rank 0 has initialized shared resources.
     if local_rank == 0:
         dist.barrier()
 
-    # =========================================================
-    # [V100 FIX]: The Sledgehammer (Banish bfloat16)
-    # =========================================================
+    # Keep the model in FP16 for V100 compatibility.
     model.config.torch_dtype = torch.float16
     for name, param in model.named_parameters():
         if param.dtype == torch.bfloat16:
@@ -139,7 +136,7 @@ def main():
     )
     model = get_peft_model(model, peft_config)
     
-    # Optimizer Stability Cast
+    # Cast trainable adapter parameters for optimizer stability.
     for name, param in model.named_parameters():
         if param.requires_grad:
             param.data = param.data.to(torch.float32)
@@ -147,7 +144,6 @@ def main():
     if local_rank == 0:
         model.print_trainable_parameters()
 
-    # Production Training Arguments
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         per_device_train_batch_size=1, 
@@ -163,7 +159,7 @@ def main():
         report_to="none",
         remove_unused_columns=False, 
         dataloader_num_workers=0,          
-        ddp_find_unused_parameters=False, # Essential for LoRA + DDP
+        ddp_find_unused_parameters=False,
     )
 
     trainer = Trainer(
@@ -183,7 +179,7 @@ def main():
         print("Saving Final Model Adapters...")
         trainer.save_model(f"{OUTPUT_DIR}/final")
         processor.save_pretrained(f"{OUTPUT_DIR}/final")
-        print("✅ Full Fine-Tuning Complete.")
+        print("Full fine-tuning complete.")
 
     # Final cleanup
     dist.destroy_process_group()

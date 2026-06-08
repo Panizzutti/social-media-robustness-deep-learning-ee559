@@ -39,6 +39,10 @@ torchrun --standalone --nproc_per_node=1 eval_finetuned_unseen_random_geometries
 
 This project is a proof of concept, not a deployable moderation system. It is limited to static images, emoji overlays, one dataset, one main VLM, and fixed opacity `alpha = 0.8` in the main unseen-geometry evaluation.
 
+## LLM Usage Declaration
+
+LLMs (ChatGPT/Codex) were used to support parts of this project. Assistance included code writing and helping debugging. All experimental design choices, code changes, result interpretation, and final submitted content were reviewed and accepted by the project authors, who remain responsible for the work.
+
 ## Citation / Acknowledgements
 
 This project uses or builds on the following external resources:

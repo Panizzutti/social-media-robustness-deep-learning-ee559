@@ -3,7 +3,7 @@ import pandas as pd
 from PIL import Image
 from transformers import AutoProcessor, Qwen3VLForConditionalGeneration
 from qwen_vl_utils import process_vision_info
-from sklearn.metrics import accuracy_score, f1_score, classification_report
+from sklearn.metrics import classification_report
 import tqdm
 import os
 
@@ -69,7 +69,7 @@ def predict_meme(image_path, debug=False):
 # 4. Run Evaluation
 y_true = []
 y_pred = []
-results = [] # <--- NEW: List to store row-by-row data for the CSV
+results = []
 
 for index, row in tqdm.tqdm(mami_df.iterrows(), total=len(mami_df)):
     orig_filename = str(row['file_name'])
@@ -87,7 +87,6 @@ for index, row in tqdm.tqdm(mami_df.iterrows(), total=len(mami_df)):
     y_true.append(true_label)
     y_pred.append(pred_label)
     
-    # <--- NEW: Append to results list
     results.append({
         "file_name": orig_filename,
         "true_label": true_label,
@@ -97,7 +96,6 @@ for index, row in tqdm.tqdm(mami_df.iterrows(), total=len(mami_df)):
 # 5. Metrics & Saving
 print(classification_report(y_true, y_pred, target_names=["non-misogynous", "misogynous"]))
 
-# <--- NEW: Save the results to CSV
 out_csv = "/scratch/results/mami_clean_predictions.csv"
 os.makedirs(os.path.dirname(out_csv), exist_ok=True)
 out_df = pd.DataFrame(results)

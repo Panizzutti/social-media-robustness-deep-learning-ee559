@@ -117,7 +117,6 @@ def analyze_sweep(file_path, sweep_name):
     report_detailed_metrics_at_alpha(df_obs, df_clean, alpha_target=1.0, base_f1=base_f1)
 
 def main():
-    # Update these paths to where your massive sweep CSVs are located
     no_text_csv = "/scratch/results/mami_massive_sweep_results.csv"
     text_csv = "/scratch/results/mami_massive_sweep_with_text_results.csv"
     

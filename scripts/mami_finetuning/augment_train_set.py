@@ -1,4 +1,3 @@
-import os
 import json
 import random
 import pandas as pd
@@ -21,7 +20,7 @@ random.seed(42)
 # ==============================================================================
 # EMOJI ASSETS (ZERO-SHOT ROBUSTNESS SPLIT)
 # ==============================================================================
-# Held out completely from your 20-emoji test set to prove generalized robustness
+# Held out from the 20-emoji test set to evaluate generalization.
 NEW_TRAIN_EMOJIS = {
     "1f47d": "alien",
     "1f47b": "ghost",
@@ -102,7 +101,7 @@ def main():
     
     dataset = []
     
-    # Using Pandas for robust parsing to avoid the csv.DictReader bug
+    # Use pandas for robust TSV parsing and header cleanup.
     df = pd.read_csv(CSV_FILE, sep='\t', encoding='utf-8')
     df.columns = df.columns.str.strip() # Clean headers
     
@@ -192,7 +191,7 @@ def main():
         for record in jsonl_records:
             f.write(json.dumps(record) + '\n')
 
-    print("\n✅ Step A Complete. Augmentation dataset successfully generated.")
+    print("\nAugmentation dataset successfully generated.")
 
 if __name__ == "__main__":
     main()

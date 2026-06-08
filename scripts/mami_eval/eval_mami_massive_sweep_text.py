@@ -8,7 +8,7 @@ import os
 import math
 
 # ==========================================
-# 1. The Top 20 Emoji Dictionary Mapping
+# 1. Top 20 Emoji Dictionary Mapping
 # ==========================================
 TOP_20_EMOJIS = {
     "1f480": "skull",
@@ -152,7 +152,7 @@ def main():
     pbar = tqdm.tqdm(total=total_inferences)
     pbar.update(len(completed_keys))
 
-    # The Massive Loop
+    # The Main Loop
     for emoji_name, emoji_path in available_emojis.items():
         emoji_img = Image.open(emoji_path).convert("RGBA")
         

@@ -134,7 +134,7 @@ def main():
     # Build valid emoji paths
     available_emojis = {}
     for hex_code, name in TOP_20_EMOJIS.items():
-        # Handle cases where your files might be uppercase or lowercase
+        # Handle both lowercase and uppercase asset file names.
         path1 = os.path.join(emoji_base_dir, f"emoji_u{hex_code}.png")
         path2 = os.path.join(emoji_base_dir, f"emoji_u{hex_code.upper()}.png")
         if os.path.exists(path1):
@@ -150,7 +150,7 @@ def main():
     pbar = tqdm.tqdm(total=total_inferences)
     pbar.update(len(completed_keys)) # Advance progress bar by what's already done
 
-    # The Massive Loop
+    # main Loop
     for emoji_name, emoji_path in available_emojis.items():
         emoji_img = Image.open(emoji_path).convert("RGBA")
         

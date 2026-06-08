@@ -51,7 +51,7 @@ def analyze_robustness():
     print("-" * 55)
     print(f"Clean Macro-F1:       {clean_f1:.4f}")
     print(f"Obfuscated Macro-F1:  {obs_f1:.4f}")
-    print(f"Macro-F1 Drop:        {clean_f1 - obs_f1:.4f}  <-- THE HEADLINE METRIC")
+    print(f"Macro-F1 Drop:        {clean_f1 - obs_f1:.4f}")
     print("-" * 55)
     print(f"Clean Accuracy:       {clean_acc:.4f}")
     print(f"Obfuscated Accuracy:  {obs_acc:.4f}")

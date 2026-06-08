@@ -7,7 +7,7 @@ import math
 import tqdm
 from transformers import AutoProcessor, Qwen3VLForConditionalGeneration
 from qwen_vl_utils import process_vision_info
-from peft import PeftModel # <--- Required to load your fine-tuned adapters
+from peft import PeftModel
 
 # ==========================================
 # 1. Configuration & Emojis
@@ -21,7 +21,7 @@ TOP_20_EMOJIS = {
 }
 
 BASE_MODEL_ID = "QCRI/MemeLens-VLM"
-ADAPTER_PATH = "/scratch/models/MemeLens_Robust_LoRA/final" # <--- Your fine-tuned weights
+ADAPTER_PATH = "/scratch/models/MemeLens_Robust_LoRA/final"
 OUT_CSV = "/scratch/results/mami_finetuned_massive_results.csv"
 
 # ==========================================
@@ -136,28 +136,32 @@ def main():
                         "alpha": alpha
                     })
 
-    # Deal the tasks like cards (GPU 0 gets task 0, 6, 12... GPU 1 gets task 1, 7, 13...)
+    # Shard tasks across ranks.
     my_tasks = all_tasks[local_rank::world_size]
     if local_rank == 0: 
         print(f"Total Tasks: {len(all_tasks)}. Each GPU is processing ~{len(my_tasks)} tasks.")
 
     # ------------------------------------------
-    # MODEL LOADING (Traffic Cop + V100 Sledgehammer + LoRA)
+    # MODEL LOADING
     # ------------------------------------------
-    if local_rank != 0: dist.barrier()
+    if local_rank != 0:
+        dist.barrier()
     processor = AutoProcessor.from_pretrained(ADAPTER_PATH)
     base_model = Qwen3VLForConditionalGeneration.from_pretrained(
         BASE_MODEL_ID, device_map={"": local_rank}, torch_dtype=torch.float16, attn_implementation="sdpa"
     )
-    if local_rank == 0: dist.barrier()
+    if local_rank == 0:
+        dist.barrier()
 
-    # V100 Fix: Banish Bfloat16 from the base model before attaching adapters
+    # Keep the model in FP16 for V100 compatibility before attaching adapters.
     base_model.config.torch_dtype = torch.float16
     for name, param in base_model.named_parameters():
-        if param.dtype == torch.bfloat16: param.data = param.data.to(torch.float16)
+        if param.dtype == torch.bfloat16:
+            param.data = param.data.to(torch.float16)
 
     # Attach the fine-tuned LoRA weights
-    if local_rank == 0: print("Attaching Fine-Tuned LoRA Adapters...")
+    if local_rank == 0:
+        print("Attaching Fine-Tuned LoRA Adapters...")
     model = PeftModel.from_pretrained(base_model, ADAPTER_PATH)
     model.eval()
 
@@ -182,7 +186,7 @@ def main():
                 emoji_img = Image.open(task["emoji_path"]).convert("RGBA")
                 obfuscated_pil = task["pattern_func"](Image.open(img_path).convert("RGBA"), emoji_img, task["alpha"])
             
-            # 2. Format Prompt (If you want to test the model WITHOUT text, just remove the {task['text']} variable below)
+            # 2. Format prompt with OCR text.
             dynamic_instruction = f"Meme Text: '{task['text']}'\n\nTask: Identify if this meme contains misogyny.\nAllowed Labels: 'misogynous' or 'clean'.\nAnswer:"
             
             messages = [
@@ -209,7 +213,8 @@ def main():
             pred_label = 1 if "misogyn" in output_text else 0
             
         except Exception as e:
-            if local_rank == 0: print(f"Error on {task['file_name']}: {e}")
+            if local_rank == 0:
+                print(f"Error on {task['file_name']}: {e}")
             pred_label = 0 
             
         # 4. Save to temporary GPU CSV
@@ -237,7 +242,7 @@ def main():
             
         final_df = pd.concat(all_dfs, ignore_index=True)
         final_df.to_csv(OUT_CSV, index=False)
-        print(f"✅ Master evaluation complete! Results saved to: {OUT_CSV}")
+        print(f"Evaluation complete. Results saved to: {OUT_CSV}")
 
     dist.destroy_process_group()
 

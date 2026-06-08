@@ -5,3 +5,5 @@ model_cache/
 emoticons/
 
 .DS_Store
+__pycache__/
+*.pyc

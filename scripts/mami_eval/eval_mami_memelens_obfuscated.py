@@ -77,7 +77,7 @@ def main():
     for index, row in tqdm.tqdm(mami_df.iterrows(), total=len(mami_df)):
         orig_filename = str(row['file_name'])
         
-        # Smart resolver: The augmentation script might have changed .jpg to .png
+        # Resolve either jpg or png outputs from the augmentation script.
         img_path = base_img_dir / orig_filename
         if not img_path.exists():
             img_path = img_path.with_suffix('.png')

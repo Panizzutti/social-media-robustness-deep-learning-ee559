@@ -83,7 +83,7 @@ def main():
     for index, row in tqdm.tqdm(mami_df.iterrows(), total=len(mami_df)):
         orig_filename = str(row['file_name'])
         
-        # Smart resolver for png/jpg
+        # Resolve either jpg or png image paths.
         img_path = os.path.join(args.img_dir, orig_filename)
         if not os.path.exists(img_path):
             img_path = img_path.replace(".jpg", ".png")
@@ -94,7 +94,7 @@ def main():
         
         try:
             pred_label = predict_meme(img_path, text_transcription)
-        except Exception as e:
+        except Exception:
             # If the image is completely missing or corrupted, default to 0
             pred_label = 0
             

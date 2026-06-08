@@ -13,12 +13,12 @@ DATA_PATH = "/scratch/datasets/MAMI/train/mami_train_tiny.jsonl"
 OUTPUT_DIR = "/scratch/models/MemeLens_Overfit_Check"
 
 # ==========================================
-# CUSTOM DATA COLLATOR (The Fix)
+# CUSTOM DATA COLLATOR
 # ==========================================
 class QwenCollator:
     """
-    Loads images on the fly, processes tokens, and crucially: 
-    Masks out the system and user prompts so the model ONLY learns the target label.
+    Loads images on the fly, processes tokens, and masks out the system
+    and user prompts so the model learns only the target label.
     """
     def __init__(self, processor):
         self.processor = processor
@@ -27,7 +27,7 @@ class QwenCollator:
         texts = [ex["text"] for ex in examples]
         prompt_texts = [ex["prompt_text"] for ex in examples]
         
-        # 1. Load images dynamically (prevents Dataset serialization crashes)
+        # 1. Load images dynamically.
         images = []
         for ex in examples:
             if ex["image_path"]:
@@ -35,19 +35,17 @@ class QwenCollator:
             else:
                 images.append(None)
 
-        # 2. Let the Qwen Processor handle all complex tokenization and vision grids
+        # 2. Let the Qwen processor handle tokenization and vision grids.
         batch = self.processor(text=texts, images=images, padding=True, return_tensors="pt")
         
         # 3. Clone input_ids to create the target labels
         labels = batch["input_ids"].clone()
         
-        # 4. MASKING THE PROMPT
+        # 4. Mask the prompt.
         for i, prompt_text in enumerate(prompt_texts):
-            # Tokenize just the prompt to find out exactly how many tokens it takes up
             prompt_inputs = self.processor(text=[prompt_text], padding=False, return_tensors="pt")
             prompt_len = prompt_inputs["input_ids"].shape[1]
             
-            # Set all prompt tokens to -100 so the optimizer ignores them
             labels[i, :prompt_len] = -100 
             
         batch["labels"] = labels
@@ -105,7 +103,7 @@ def main():
         torch_dtype=torch.float16
     )
     
-    # [V100 FIX]: The Sledgehammer
+    # Keep the model in FP16 for V100 compatibility.
     model.config.torch_dtype = torch.float16
     for name, param in model.named_parameters():
         if param.dtype == torch.bfloat16:
@@ -137,7 +135,6 @@ def main():
 
     model.print_trainable_parameters()
 
-    # Native HF TrainingArguments (No TRL SFTConfig required)
     training_args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         per_device_train_batch_size=1, 
@@ -150,20 +147,19 @@ def main():
         fp16=True, 
         bf16=False, 
         report_to="none",
-        remove_unused_columns=False, # Essential: preserves our custom data fields
+        remove_unused_columns=False,
     )
 
-    # Native HF Trainer
     trainer = Trainer(
         model=model,
         train_dataset=train_dataset,
         args=training_args,
-        data_collator=QwenCollator(processor), # Inject our custom collator
+        data_collator=QwenCollator(processor),
     )
 
     print("Starting Overfit Training...")
     trainer.train()
-    print("✅ Overfit Check Complete.")
+    print("Overfit check complete.")
 
 if __name__ == "__main__":
     main()
