@@ -41,7 +41,7 @@ This project is a proof of concept, not a deployable moderation system. It is li
 
 ## LLM Usage Declaration
 
-LLMs (ChatGPT/Codex) were used to support parts of this project. Assistance included code writing and helping debugging. All experimental design choices, code changes, result interpretation, and final submitted content were reviewed and accepted by the project authors, who remain responsible for the work.
+LLMs (ChatGPT/Codex) were used to support parts of this project for assistance in code writing, helping debugging and grammar checks. All experimental design choices, code changes, result interpretation, and final submitted content were reviewed and accepted by the project authors, who remain responsible for the work.
 
 ## Citation / Acknowledgements
 
